@@ -1,4 +1,3 @@
-# TETOS
-Tiny Enumeration Tmux Organizer Scripts
+# Enumux
 
-![Demo](TETOS_demo.gif)
+Automated tmux-based enumeration for given IP range (useful for OSCP, OSEP, HackTheBox labs)
