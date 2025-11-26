@@ -5,19 +5,30 @@
 I wrote this tool to help speed up and organize initial enumeration during OSCP, OSEP, VulnHub, and HackTheBox-style labs.
 
 ```bash
-$ ./enumux.sh 10.10.110.0/24
+$ ./enumux.sh 192.168.218.0/24
 
 [*] Active hosts detected:
-10.10.110.2
-...
+192.168.218.130
+192.168.218.131
+192.168.218.132
 
-[*] Enumerating 10.10.110.2...
-[+] Tmux session created for 10.10.110.2.
-    → Attach with: tmux attach-session -t 10_10_110_2
+[*] Enumerating 192.168.218.130...
+[+] Tmux session created for 192.168.218.130.
+    → Attach with: tmux attach-session -t 192_168_218_130
+
+[*] Enumerating 192.168.218.131...
+[+] Tmux session created for 192.168.218.131.
+    → Attach with: tmux attach-session -t 192_168_218_131
+
+[*] Enumerating 192.168.218.132...
+[+] Tmux session created for 192.168.218.132.
+    → Attach with: tmux attach-session -t 192_168_218_132
 
 [*] Active tmux sessions:
-10_10_110_2: 1 windows ...
-...
+0: 3 windows (created Sun Oct 12 14:17:02 2025) (attached)
+192_168_218_130: 7 windows (created Wed Nov 26 15:55:11 2025)
+192_168_218_131: 5 windows (created Wed Nov 26 15:55:16 2025)
+192_168_218_132: 1 windows (created Wed Nov 26 15:55:22 2025)
 ```
 
 > [!TIP]
