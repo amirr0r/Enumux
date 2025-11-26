@@ -4,7 +4,7 @@ IP_RANGE="$1"
 SLOW="$2"
 
 if [ -z "$IP_RANGE" ]; then
-    echo "Usage: bash tetos-sweep.sh <IP_RANGE> [slow]"
+    echo "Usage: bash enumux.sh <IP_RANGE> [slow]"
     exit 1
 fi
 
