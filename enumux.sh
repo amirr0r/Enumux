@@ -1,22 +1,25 @@
 #!/bin/bash
 
-IP_RANGE="$1"
 SLOW="$2"
 
-if [ -z "$IP_RANGE" ]; then
-    echo "Usage: bash enumux.sh <IP_RANGE> [slow]"
-    exit 1
-fi
-
+# Step 1: Use active_hosts.txt if available
 if [ -f "active_hosts.txt" ]; then
     echo "[*] Found existing active_hosts.txt — skipping ping sweep."
+    ACTIVE_IPS=$(grep -v '^#' active_hosts.txt | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}')
 else
+    IP_RANGE="$1"
+    if [ -z "$IP_RANGE" ]; then
+        echo "Usage: bash enumux.sh <IP_RANGE> [slow]"
+        echo "Or place a file named 'active_hosts.txt' in this folder with one IP per line."
+        exit 1
+    fi
+
     echo "[*] Performing ping sweep over $IP_RANGE..."
     nmap -sn -T4 "$IP_RANGE" -oN active_hosts.txt
+    ACTIVE_IPS=$(grep "Nmap scan report for" active_hosts.txt | awk '{print $NF}')
 fi
 
-ACTIVE_IPS=$(grep "Nmap scan report for" active_hosts.txt | awk '{print $NF}')
-
+# Step 2: Confirm IPs found
 if [ -z "$ACTIVE_IPS" ]; then
     echo "[!] No active hosts found."
     exit 1
@@ -25,6 +28,7 @@ fi
 echo -e "\n[*] Active hosts detected:"
 echo "$ACTIVE_IPS"
 
+# Step 3: Enumeration function
 enumerate_host() {
     IP="$1"
     SESSION_NAME="${IP//./_}"
@@ -34,7 +38,8 @@ enumerate_host() {
     mkdir -p "$IP/services" "$IP/img"
     cd "$IP" || exit 1
 
-    #printf "# %s\n\n## Enumeration\n\n### \`nmap\` scan\n\n## Foothold\n\n## Privesc\n\n___\n\n## Useful links\n\n" > README.md
+    # Uncomment if you want README generation
+    # printf "# %s\n\n## Enumeration\n\n### \`nmap\` scan\n\n## Foothold\n\n## Privesc\n\n___\n\n## Useful links\n\n" > README.md
 
     tmux start-server
     tmux new-session -d -s "$SESSION_NAME" -n nmap
@@ -43,15 +48,14 @@ enumerate_host() {
     WEBDIR="/usr/share/wordlists/seclists/Discovery/Web-Content/common.txt"
 
     if [ "$SLOW" == "slow" ]; then
-        tmux send-keys -t "$SESSION_NAME:0" "nmap -sS -oN ports.txt $IP -Pn; " C-m
+        tmux send-keys -t "$SESSION_NAME:0" "nmap -sS -oN ports.txt $IP -Pn" C-m
     else
-        tmux send-keys -t "$SESSION_NAME:0" "nmap -min-rate 5000 --max-retries 1 -sS -oN ports.txt $IP -Pn; " C-m
+        tmux send-keys -t "$SESSION_NAME:0" "nmap -min-rate 5000 --max-retries 1 -sS -oN ports.txt $IP -Pn" C-m
     fi
 
     sleep 5
     i=1
 
-    # Triggered after initial scan: create new windows for each port
     tmux send-keys -t "$SESSION_NAME:0" "
 for p in \$(grep -E '^[0-9]+/tcp' ports.txt | grep open | cut -d'/' -f1); do
     case \$p in
@@ -60,8 +64,8 @@ for p in \$(grep -E '^[0-9]+/tcp' ports.txt | grep open | cut -d'/' -f1); do
             tmux send-keys -t $SESSION_NAME:\$i 'ftp $IP' C-m ;;
         25)
             tmux new-window -t $SESSION_NAME:\$((++i)) -n SMTP
-            #tmux send-keys -t $SESSION_NAME:\$i \"echo '[*] Checking SMTP VRFY responses...'; \"
-            #tmux send-keys -t $SESSION_NAME:\$i \"for user in \$(cat $USERNAMES); do echo VRFY \$user | nc -nv -w 1 $IP \$p | grep ^'250'; done | tee services/25-smtp-vrfy.txt\" C-m
+            # tmux send-keys -t $SESSION_NAME:\$i \"echo '[*] Checking SMTP VRFY responses...'\"
+            # tmux send-keys -t $SESSION_NAME:\$i \"for user in \$(cat $USERNAMES); do echo VRFY \$user | nc -nv -w 1 $IP \$p | grep ^'250'; done | tee services/25-smtp-vrfy.txt\" C-m
             tmux send-keys -t $SESSION_NAME:\$i \"echo '[*] Checking for SMTP open relay...'\"
             tmux send-keys -t $SESSION_NAME:\$i \"nmap -p25 -sV --script smtp-open-relay $IP -oN services/25-smtp-relay-check.txt\" C-m ;;
         53)
@@ -79,7 +83,7 @@ for p in \$(grep -E '^[0-9]+/tcp' ports.txt | grep open | cut -d'/' -f1); do
             tmux send-keys -t $SESSION_NAME:\$i \"rpcclient -U '%' $IP | tee services/135-rpc.txt\" C-m ;;
         389)
             tmux new-window -t $SESSION_NAME:\$((++i)) -n LDAP
-            tmux send-keys -t $SESSION_NAME:\$i \"ldapsearch -h $IP -x -s base namingcontexts | tee services/ldap.txt\" C-m ;;
+            tmux send-keys -t $SESSION_NAME:\$i \"ldapsearch -h $IP -x -s base namingcontexts | tee services/389-ldap.txt\" C-m ;;
         443)
             tmux new-window -t $SESSION_NAME:\$((++i)) -n HTTPS
             tmux send-keys -t $SESSION_NAME:\$i \"gobuster dir -u https://$IP -w $WEBDIR -x .txt -k -o services/443-https.txt\" C-m ;;
@@ -107,11 +111,11 @@ for p in \$(grep -E '^[0-9]+/tcp' ports.txt | grep open | cut -d'/' -f1); do
 done
 " C-m
 
-    # Extended enumeration 
+    # Extended enumeration scans (optional — uncomment as needed)
     tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sS -sV -oN $IP.txt $IP -Pn &" C-m
-    #tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sV -sC -p- -oN $IP-full-port-scan.txt $IP -Pn &" C-m
+    # tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sV -sC -p- -oN $IP-full-port-scan.txt $IP -Pn &" C-m
     tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sU -oN UDP-scan.txt $IP -Pn &" C-m
-    #tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sS --script vuln -oN vuln-scan.txt $IP -Pn" C-m
+    # tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sS --script vuln -oN vuln-scan.txt $IP -Pn" C-m
 
     echo -e "[+] Tmux session created for $IP."
     echo -e "    → Attach with: \033[1mtmux attach-session -t $SESSION_NAME\033[0m"
@@ -119,7 +123,7 @@ done
     cd ..
 }
 
-# Loop over each active IP
+# Step 4: Enumerate all IPs
 for IP in $ACTIVE_IPS; do
     enumerate_host "$IP"
 done
