@@ -106,8 +106,8 @@ for p in \$(grep -E '^[0-9]+/tcp' ports.txt | grep open | cut -d'/' -f1); do
         445)
             tmux new-window -t $SESSION_NAME:\$((++i)) -n SMB
             tmux send-keys -t $SESSION_NAME:\$i \"smbclient -L //$IP -U '%' | tee services/445-smbclient.txt\" C-m
-            tmux send-keys -t $SESSION_NAME:\$i \"wait; crackmapexec smb $IP --shares\" C-m
-            tmux send-keys -t $SESSION_NAME:\$i \"wait; smbmap -H $IP -R | tee services/445-smbmap.txt\" C-m
+            tmux send-keys -t $SESSION_NAME:\$i \"wait; nxc smb $IP --shares\" C-m
+            #tmux send-keys -t $SESSION_NAME:\$i \"wait; smbmap -H $IP -R | tee services/445-smbmap.txt\" C-m
             tmux new-window -t $SESSION_NAME:\$((++i)) -n enum4linux
             tmux send-keys -t $SESSION_NAME:\$i \"enum4linux -a $IP | tee linux-enum.txt\" C-m ;;
         1521)
