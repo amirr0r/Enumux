@@ -19,3 +19,7 @@ $ ./enumux.sh 10.10.110.0/24
 10_10_110_2: 1 windows ...
 ...
 ```
+
+> [!TIP]
+> If you don't want to scan an entire IP range, you can manually create a file named `active_hosts.txt` in your current directory. This file should contain one IP address per line. When present, Enumux will skip the ping sweep and use the IPs listed in this file as the targets to enumerate:
+> `[*] Found existing active_hosts.txt — skipping ping sweep.`
