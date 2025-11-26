@@ -9,7 +9,7 @@ I wrote this tool to help speed up and organize initial enumeration during OSCP,
 > `[*] Found existing active_hosts.txt — skipping ping sweep.`
 
 ```bash
-$ ./enumux.sh 192.168.218.0/24
+$ /opt/tools/Enumux/enumux.sh 192.168.218.0/24
 
 [*] Active hosts detected:
 192.168.218.130
@@ -17,20 +17,26 @@ $ ./enumux.sh 192.168.218.0/24
 192.168.218.132
 
 [*] Enumerating 192.168.218.130...
+    OS detection: Windows (TTL=125)
 [+] Tmux session created for 192.168.218.130.
     → Attach with: tmux attach-session -t 192_168_218_130
+    → Close session: tmux kill-session -t 192_168_218_130
 
 [*] Enumerating 192.168.218.131...
+    OS detection: Unknown (no ping reply)
 [+] Tmux session created for 192.168.218.131.
     → Attach with: tmux attach-session -t 192_168_218_131
+    → Close session: tmux kill-session -t 192_168_218_131
 
 [*] Enumerating 192.168.218.132...
+    OS detection: Windows (TTL=125)
 [+] Tmux session created for 192.168.218.132.
     → Attach with: tmux attach-session -t 192_168_218_132
+    → Close session: tmux kill-session -t 192_168_218_132
 
 [*] Active tmux sessions:
 0: 3 windows (created Sun Oct 12 14:17:02 2025) (attached)
-192_168_218_130: 7 windows (created Wed Nov 26 15:55:11 2025)
-192_168_218_131: 5 windows (created Wed Nov 26 15:55:16 2025)
-192_168_218_132: 1 windows (created Wed Nov 26 15:55:22 2025)
+192_168_218_130: 7 windows (created Wed Nov 26 16:06:32 2025)
+192_168_218_131: 5 windows (created Wed Nov 26 16:06:38 2025)
+192_168_218_132: 1 windows (created Wed Nov 26 16:06:43 2025)
 ```
