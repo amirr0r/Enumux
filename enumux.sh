@@ -130,7 +130,7 @@ done
     # Extended enumeration scans (optional — uncomment as needed)
     tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sS -sV -oN $IP.txt $IP -Pn &" C-m
     # tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sV -sC -p- -oN $IP-full-port-scan.txt $IP -Pn &" C-m
-    tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sU -oN UDP-scan.txt $IP -Pn &" C-m
+    # tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sU -oN UDP-scan.txt $IP -Pn &" C-m
     # tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sS --script vuln -oN vuln-scan.txt $IP -Pn" C-m
 
     echo -e "[+] Tmux session created for $IP."
