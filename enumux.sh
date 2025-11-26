@@ -28,13 +28,29 @@ fi
 echo -e "\n[*] Active hosts detected:"
 echo "$ACTIVE_IPS"
 
-# Step 3: Enumeration function
+# Step 3: Enumeration functions
+check_os_from_ttl() {
+    local IP="$1"
+    local ttl
+    ttl=$(ping -c1 -W 1 "$IP" 2>/dev/null | grep -o 'ttl=[0-9]*' | cut -d= -f2)
+
+    if [[ -z "$ttl" ]]; then
+        echo -e "    OS detection: \e[33mUnknown (no ping reply)\e[0m"
+    elif [[ "$ttl" -gt 60 && "$ttl" -lt 119 ]]; then
+        echo -e "    OS detection: \e[1m\e[32mLinux\e[0m (TTL=$ttl)"
+    elif [[ "$ttl" -gt 119 && "$ttl" -lt 254 ]]; then
+        echo -e "    OS detection: \e[1m\e[34mWindows\e[0m (TTL=$ttl)"
+    else
+        echo -e "    OS detection: \e[33mUnknown TTL=$ttl\e[0m"
+    fi
+}
+
 enumerate_host() {
     IP="$1"
     SESSION_NAME="${IP//./_}"
 
     echo -e "\n[*] Enumerating $IP..."
-
+    check_os_from_ttl "$IP"
     mkdir -p "$IP/services" "$IP/img"
     cd "$IP" || exit 1
 
@@ -119,6 +135,7 @@ done
 
     echo -e "[+] Tmux session created for $IP."
     echo -e "    → Attach with: \033[1mtmux attach-session -t $SESSION_NAME\033[0m"
+    echo -e "    → Close session: \033[1mtmux kill-session -t $SESSION_NAME\033[0m"
 
     cd ..
 }
