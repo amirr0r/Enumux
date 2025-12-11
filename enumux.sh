@@ -82,7 +82,7 @@ for p in \$(grep -E '^[0-9]+/tcp' ports.txt | grep open | cut -d'/' -f1); do
             tmux new-window -t $SESSION_NAME:\$((++i)) -n SMTP
             # tmux send-keys -t $SESSION_NAME:\$i \"echo '[*] Checking SMTP VRFY responses...'\"
             # tmux send-keys -t $SESSION_NAME:\$i \"for user in \$(cat $USERNAMES); do echo VRFY \$user | nc -nv -w 1 $IP \$p | grep ^'250'; done | tee services/25-smtp-vrfy.txt\" C-m
-            tmux send-keys -t $SESSION_NAME:\$i \"echo '[*] Checking for SMTP open relay...'\"
+            tmux send-keys -t $SESSION_NAME:\$i \"echo '[*] Checking for SMTP open relay...'; \"
             tmux send-keys -t $SESSION_NAME:\$i \"nmap -p25 -sV --script smtp-open-relay $IP -oN services/25-smtp-relay-check.txt\" C-m ;;
         53)
             tmux new-window -t $SESSION_NAME:\$((++i)) -n DNS
