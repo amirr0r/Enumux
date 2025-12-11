@@ -92,8 +92,8 @@ for p in \$(grep -E '^[0-9]+/tcp' ports.txt | grep open | cut -d'/' -f1); do
             tmux send-keys -t $SESSION_NAME:\$i \"/opt/finger-user-enum.pl -U $USERNAMES -t $IP\" C-m ;;
         80)
             tmux new-window -t $SESSION_NAME:\$((++i)) -n HTTP
-            tmux send-keys -t $SESSION_NAME:\$i \"gobuster dir -u http://$IP -w $WEBDIR -x .txt -o services/80-http.txt\" C-m
-            tmux send-keys -t $SESSION_NAME:\$i \"wait; nikto -h $IP | tee services/80-nikto.txt\" C-m ;;
+            tmux send-keys -t $SESSION_NAME:\$i \"gobuster dir -u http://$IP -w $WEBDIR -x .txt,.html,.php,.aspx-o services/80-http.txt\" C-m
+            #tmux send-keys -t $SESSION_NAME:\$i \"wait; nikto -h $IP | tee services/80-nikto.txt\" C-m ;;
         135)
             tmux new-window -t $SESSION_NAME:\$((++i)) -n RPC
             tmux send-keys -t $SESSION_NAME:\$i \"rpcclient -U '%' $IP | tee services/135-rpc.txt\" C-m ;;
