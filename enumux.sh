@@ -82,7 +82,7 @@ for p in \$(grep -E '^[0-9]+/tcp' ports.txt | grep open | cut -d'/' -f1); do
             tmux new-window -t $SESSION_NAME:\$((++i)) -n SMTP
             # tmux send-keys -t $SESSION_NAME:\$i \"echo '[*] Checking SMTP VRFY responses...'\"
             # tmux send-keys -t $SESSION_NAME:\$i \"for user in \$(cat $USERNAMES); do echo VRFY \$user | nc -nv -w 1 $IP \$p | grep ^'250'; done | tee services/25-smtp-vrfy.txt\" C-m
-            tmux send-keys -t $SESSION_NAME:\$i \"echo '[*] Checking for SMTP open relay...'; \"
+            tmux send-keys -t $SESSION_NAME:\$i \"echo '[*] Checking for SMTP open relay...'\"
             tmux send-keys -t $SESSION_NAME:\$i \"nmap -p25 -sV --script smtp-open-relay $IP -oN services/25-smtp-relay-check.txt\" C-m ;;
         53)
             tmux new-window -t $SESSION_NAME:\$((++i)) -n DNS
@@ -92,7 +92,7 @@ for p in \$(grep -E '^[0-9]+/tcp' ports.txt | grep open | cut -d'/' -f1); do
             tmux send-keys -t $SESSION_NAME:\$i \"/opt/finger-user-enum.pl -U $USERNAMES -t $IP\" C-m ;;
         80)
             tmux new-window -t $SESSION_NAME:\$((++i)) -n HTTP
-            tmux send-keys -t $SESSION_NAME:\$i \"gobuster dir -u http://$IP -w $WEBDIR -x .txt,.html,.php,.aspx-o services/80-http.txt\" C-m
+            tmux send-keys -t $SESSION_NAME:\$i \"gobuster dir -u http://$IP -w $WEBDIR -x .txt,.html,.php,.aspx -o services/80-http.txt\" C-m
             #tmux send-keys -t $SESSION_NAME:\$i \"wait; nikto -h $IP | tee services/80-nikto.txt\" C-m ;;
         135)
             tmux new-window -t $SESSION_NAME:\$((++i)) -n RPC
@@ -105,8 +105,8 @@ for p in \$(grep -E '^[0-9]+/tcp' ports.txt | grep open | cut -d'/' -f1); do
             tmux send-keys -t $SESSION_NAME:\$i \"gobuster dir -u https://$IP -w $WEBDIR -x .txt -k -o services/443-https.txt\" C-m ;;
         445)
             tmux new-window -t $SESSION_NAME:\$((++i)) -n SMB
-            tmux send-keys -t $SESSION_NAME:\$i \"smbclient -L //$IP -U '%' | tee services/445-smbclient.txt\" C-m ;;
-            tmux send-keys -t $SESSION_NAME:\$i \"wait; nxc smb $IP --shares\" C-m ;;
+            tmux send-keys -t $SESSION_NAME:\$i \"smbclient -L //$IP -U '%' | tee services/445-smbclient.txt\" C-m
+            tmux send-keys -t $SESSION_NAME:\$i \"wait; nxc smb $IP --shares\" C-m
             #tmux send-keys -t $SESSION_NAME:\$i \"wait; smbmap -H $IP -R | tee services/445-smbmap.txt\" C-m
             tmux new-window -t $SESSION_NAME:\$((++i)) -n enum4linux
             tmux send-keys -t $SESSION_NAME:\$i \"enum4linux -a $IP | tee linux-enum.txt\" C-m ;;
