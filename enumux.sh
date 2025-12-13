@@ -28,7 +28,7 @@ fi
 echo -e "\n[*] Active hosts detected:"
 echo "$ACTIVE_IPS"
 
-# Step 3: Enumeration functions
+# TTL-based OS detection
 check_os_from_ttl() {
     local IP="$1"
     local ttl
@@ -45,6 +45,7 @@ check_os_from_ttl() {
     fi
 }
 
+# Per-host enumeration
 enumerate_host() {
     IP="$1"
     SESSION_NAME="${IP//./_}"
@@ -53,9 +54,6 @@ enumerate_host() {
     check_os_from_ttl "$IP"
     mkdir -p "$IP/services" "$IP/img"
     cd "$IP" || exit 1
-
-    # Uncomment if you want README generation
-    # printf "# %s\n\n## Enumeration\n\n### \`nmap\` scan\n\n## Foothold\n\n## Privesc\n\n___\n\n## Useful links\n\n" > README.md
 
     tmux start-server
     tmux new-session -d -s "$SESSION_NAME" -n nmap
@@ -70,67 +68,65 @@ enumerate_host() {
     fi
 
     sleep 5
-    i=1
+    i=0
+    OPEN_PORTS=$(grep -E "^[0-9]+/tcp" ports.txt | grep open | cut -d '/' -f1)
 
-    tmux send-keys -t "$SESSION_NAME:0" "
-for p in \$(grep -E '^[0-9]+/tcp' ports.txt | grep open | cut -d'/' -f1); do
-    case \$p in
-        21)
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n FTP
-            tmux send-keys -t $SESSION_NAME:\$i 'ftp $IP' C-m ;;
-        25)
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n SMTP
-            # tmux send-keys -t $SESSION_NAME:\$i \"echo '[*] Checking SMTP VRFY responses...'\"
-            # tmux send-keys -t $SESSION_NAME:\$i \"for user in \$(cat $USERNAMES); do echo VRFY \$user | nc -nv -w 1 $IP \$p | grep ^'250'; done | tee services/25-smtp-vrfy.txt\" C-m
-            tmux send-keys -t $SESSION_NAME:\$i \"echo '[*] Checking for SMTP open relay...'\"
-            tmux send-keys -t $SESSION_NAME:\$i \"nmap -p25 -sV --script smtp-open-relay $IP -oN services/25-smtp-relay-check.txt\" C-m ;;
-        53)
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n DNS
-            tmux send-keys -t $SESSION_NAME:\$i \"dig axfr @$IP | tee services/53-dns.txt\" C-m ;;
-        79)
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n FINGER
-            tmux send-keys -t $SESSION_NAME:\$i \"/opt/finger-user-enum.pl -U $USERNAMES -t $IP\" C-m ;;
-        80)
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n HTTP
-            tmux send-keys -t $SESSION_NAME:\$i \"gobuster dir -u http://$IP -w $WEBDIR -x .txt,.html,.php,.aspx -o services/80-http.txt\" C-m
-            #tmux send-keys -t $SESSION_NAME:\$i \"wait; nikto -h $IP | tee services/80-nikto.txt\" C-m ;;
-        135)
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n RPC
-            tmux send-keys -t $SESSION_NAME:\$i \"rpcclient -U '%' $IP | tee services/135-rpc.txt\" C-m ;;
-        389)
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n LDAP
-            tmux send-keys -t $SESSION_NAME:\$i \"ldapsearch -h $IP -x -s base namingcontexts | tee services/389-ldap.txt\" C-m ;;
-        443)
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n HTTPS
-            tmux send-keys -t $SESSION_NAME:\$i \"gobuster dir -u https://$IP -w $WEBDIR -x .txt -k -o services/443-https.txt\" C-m ;;
-        445)
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n SMB
-            tmux send-keys -t $SESSION_NAME:\$i \"smbclient -L //$IP -U '%' | tee services/445-smbclient.txt\" C-m
-            tmux send-keys -t $SESSION_NAME:\$i \"wait; nxc smb $IP --shares\" C-m
-            #tmux send-keys -t $SESSION_NAME:\$i \"wait; smbmap -H $IP -R | tee services/445-smbmap.txt\" C-m
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n enum4linux
-            tmux send-keys -t $SESSION_NAME:\$i \"enum4linux -a $IP | tee linux-enum.txt\" C-m ;;
-        1521)
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n Oracle
-            tmux send-keys -t $SESSION_NAME:\$i \"git clone https://github.com/quentinhardy/odat.git\" C-m ;;
-        2049)
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n NFS
-            tmux send-keys -t $SESSION_NAME:\$i \"showmount -e $IP | tee services/2049-NFS.txt\" C-m ;;
-        3306)
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n MySQL ;;
-        3389)
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n RDP
-            tmux send-keys -t $SESSION_NAME:\$i \"nmap --script 'rdp-ntlm-info' -p 3389 -T4 -Pn -oN $IP-rdp-enum.txt $IP\" C-m ;;
-        5432)
-            tmux new-window -t $SESSION_NAME:\$((++i)) -n PostgreSQL ;;
-    esac
-done
-" C-m
+    for p in $OPEN_PORTS; do
+        ((i++))
+        case $p in
+            21)
+                tmux new-window -t "$SESSION_NAME:$i" -n FTP
+                tmux send-keys -t "$SESSION_NAME:$i" "ftp $IP" C-m ;;
+            25)
+                tmux new-window -t "$SESSION_NAME:$i" -n SMTP
+                tmux send-keys -t "$SESSION_NAME:$i" "echo '[*] Checking for SMTP open relay...'" C-m
+                tmux send-keys -t "$SESSION_NAME:$i" "nmap -p25 -sV --script smtp-open-relay $IP -oN services/25-smtp-relay-check.txt" C-m ;;
+            53)
+                tmux new-window -t "$SESSION_NAME:$i" -n DNS
+                tmux send-keys -t "$SESSION_NAME:$i" "dig axfr @$IP | tee services/53-dns.txt" C-m ;;
+            79)
+                tmux new-window -t "$SESSION_NAME:$i" -n FINGER
+                tmux send-keys -t "$SESSION_NAME:$i" "/opt/finger-user-enum.pl -U $USERNAMES -t $IP" C-m ;;
+            80)
+                tmux new-window -t "$SESSION_NAME:$i" -n HTTP
+                tmux send-keys -t "$SESSION_NAME:$i" "gobuster dir -u http://$IP -w $WEBDIR -x .txt,.html,.php,.aspx -o services/80-http.txt" C-m ;;
+            135)
+                tmux new-window -t "$SESSION_NAME:$i" -n RPC
+                tmux send-keys -t "$SESSION_NAME:$i" "rpcclient -U '%' $IP | tee services/135-rpc.txt" C-m ;;
+            389)
+                tmux new-window -t "$SESSION_NAME:$i" -n LDAP
+                tmux send-keys -t "$SESSION_NAME:$i" "ldapsearch -h $IP -x -s base namingcontexts | tee services/389-ldap.txt" C-m ;;
+            443)
+                tmux new-window -t "$SESSION_NAME:$i" -n HTTPS
+                tmux send-keys -t "$SESSION_NAME:$i" "gobuster dir -u https://$IP -w $WEBDIR -x .txt -k -o services/443-https.txt" C-m ;;
+            445)
+                tmux new-window -t "$SESSION_NAME:$i" -n SMB
+                tmux send-keys -t "$SESSION_NAME:$i" "smbclient -L //$IP -U '%' | tee services/445-smbclient.txt" C-m
+                tmux send-keys -t "$SESSION_NAME:$i" "wait; crackmapexec smb $IP --shares" C-m
+                tmux send-keys -t "$SESSION_NAME:$i" "wait; smbmap -H $IP -R | tee services/445-smbmap.txt" C-m
+                ((i++))
+                tmux new-window -t "$SESSION_NAME:$i" -n enum4linux
+                tmux send-keys -t "$SESSION_NAME:$i" "enum4linux -a $IP | tee linux-enum.txt" C-m ;;
+            1521)
+                tmux new-window -t "$SESSION_NAME:$i" -n Oracle
+                tmux send-keys -t "$SESSION_NAME:$i" "git clone https://github.com/quentinhardy/odat.git" C-m ;;
+            2049)
+                tmux new-window -t "$SESSION_NAME:$i" -n NFS
+                tmux send-keys -t "$SESSION_NAME:$i" "showmount -e $IP | tee services/2049-NFS.txt" C-m ;;
+            3306)
+                tmux new-window -t "$SESSION_NAME:$i" -n MySQL ;;
+            3389)
+                tmux new-window -t "$SESSION_NAME:$i" -n RDP
+                tmux send-keys -t "$SESSION_NAME:$i" "nmap --script 'rdp-ntlm-info' -p 3389 -T4 -Pn -oN $IP-rdp-enum.txt $IP" C-m ;;
+            5432)
+                tmux new-window -t "$SESSION_NAME:$i" -n PostgreSQL ;;
+        esac
+    done
 
-    # Extended enumeration scans (optional — uncomment as needed)
+    # Optional deep scans
     tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sS -sV -oN $IP.txt $IP -Pn &" C-m
-    # tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sV -sC -p- -oN $IP-full-port-scan.txt $IP -Pn &" C-m
-    # tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sU -oN UDP-scan.txt $IP -Pn &" C-m
+    tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sV -sC -p- -oN $IP-full-port-scan.txt $IP -Pn &" C-m
+    tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sU -oN UDP-scan.txt $IP -Pn &" C-m
     # tmux send-keys -t "$SESSION_NAME:0" "wait; nmap -vvv -sS --script vuln -oN vuln-scan.txt $IP -Pn" C-m
 
     echo -e "[+] Tmux session created for $IP."
