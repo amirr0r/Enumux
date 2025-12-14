@@ -102,7 +102,7 @@ enumerate_host() {
             445)
                 tmux new-window -t "$SESSION_NAME:$i" -n SMB
                 tmux send-keys -t "$SESSION_NAME:$i" "smbclient -L //$IP -U '%' | tee services/445-smbclient.txt" C-m
-                tmux send-keys -t "$SESSION_NAME:$i" "wait; crackmapexec smb $IP --shares" C-m
+                tmux send-keys -t "$SESSION_NAME:$i" "wait; nxc smb $IP --shares" C-m
                 tmux send-keys -t "$SESSION_NAME:$i" "wait; smbmap -H $IP -R | tee services/445-smbmap.txt" C-m
                 ((i++))
                 tmux new-window -t "$SESSION_NAME:$i" -n enum4linux
